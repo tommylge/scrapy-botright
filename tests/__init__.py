@@ -8,11 +8,11 @@ from scrapy.utils.test import get_crawler
 @asynccontextmanager
 async def make_handler(settings_dict: dict):
     """Convenience function to obtain an initialized handler and close it gracefully"""
-    from scrapy_playwright.handler import ScrapyPlaywrightDownloadHandler
+    from scrapy_botright.handler import ScrapyBotrightDownloadHandler
 
     settings_dict.setdefault("TELNETCONSOLE_ENABLED", False)
     crawler = get_crawler(settings_dict=settings_dict)
-    handler = ScrapyPlaywrightDownloadHandler(crawler=crawler)
+    handler = ScrapyBotrightDownloadHandler(crawler=crawler)
     try:
         await handler._launch()
     except:  # noqa (E722), pylint: disable=bare-except

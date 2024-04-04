@@ -61,12 +61,12 @@ Replace the default `http` and/or `https` Download Handlers through
 
 ```python
 DOWNLOAD_HANDLERS = {
-    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "http": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
+    "https": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
 }
 ```
 
-Note that the `ScrapyPlaywrightDownloadHandler` class inherits from the default
+Note that the `ScrapyBotrightDownloadHandler` class inherits from the default
 `http/https` handler. Unless explicitly marked (see [Basic usage](#basic-usage)),
 requests will be processed by the regular Scrapy download handler.
 
@@ -843,7 +843,7 @@ from the scrapy-playwright package:
 # settings.py
 EXTENSIONS = {
     "scrapy.extensions.memusage.MemoryUsage": None,
-    "scrapy_playwright.memusage.ScrapyPlaywrightMemoryUsageExtension": 0,
+    "scrapy_playwright.memusage.ScrapyBotrightMemoryUsageExtension": 0,
 }
 ```
 
@@ -1001,8 +1001,8 @@ class ExampleSpider(scrapy.Spider):
     custom_settings = {
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
         "DOWNLOAD_HANDLERS": {
-            "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-            "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+            "https": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
+            "http": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
         },
     }
 

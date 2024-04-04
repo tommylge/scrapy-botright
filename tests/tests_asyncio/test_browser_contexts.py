@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 from playwright.async_api import Browser, TimeoutError as PlaywrightTimeoutError
 from scrapy import Spider, Request
-from scrapy_playwright.page import PageMethod
+from scrapy_botright.page import PageMethod
 
 from tests import make_handler
 from tests.mockserver import StaticMockServer

@@ -11,8 +11,8 @@ class HandleExceptionInErrbackSpider(Spider):
         "PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT": 1000,  # milliseconds
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
         "DOWNLOAD_HANDLERS": {
-            "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-            # "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+            "https": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
+            # "http": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
         },
         "RETRY_TIMES": 0,
     }

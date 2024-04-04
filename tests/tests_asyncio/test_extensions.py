@@ -7,8 +7,8 @@ from playwright.async_api import PlaywrightContextManager
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.memusage import MemoryUsage
 
-from scrapy_playwright.memusage import ScrapyPlaywrightMemoryUsageExtension
-from scrapy_playwright.handler import ScrapyPlaywrightDownloadHandler
+from scrapy_botright.memusage import ScrapyBotrightMemoryUsageExtension
+from scrapy_botright.handler import ScrapyBotrightDownloadHandler
 
 
 SCHEMA_PID_MAP = {"http": 123, "https": 456}
@@ -19,7 +19,7 @@ def mock_crawler_with_handlers() -> dict:
     for schema, pid in SCHEMA_PID_MAP.items():
         process = MagicMock()
         process.pid = pid
-        handlers[schema] = MagicMock(spec=ScrapyPlaywrightDownloadHandler)
+        handlers[schema] = MagicMock(spec=ScrapyBotrightDownloadHandler)
         handlers[schema].playwright_context_manager._connection._transport._proc = process
     crawler = MagicMock()
     crawler.engine.downloader.handlers._handlers = handlers
@@ -47,18 +47,18 @@ class TestMemoryUsageExtension(IsolatedAsyncioTestCase):
     async def test_psutil_not_available_extension_disabled(self, _import_module, _MailSender):
         crawler = MagicMock()
         with pytest.raises(NotConfigured):
-            ScrapyPlaywrightMemoryUsageExtension(crawler)
+            ScrapyBotrightMemoryUsageExtension(crawler)
 
     async def test_get_process_ids_ok(self, _MailSender):
         crawler = mock_crawler_with_handlers()
-        extension = ScrapyPlaywrightMemoryUsageExtension(crawler)
+        extension = ScrapyBotrightMemoryUsageExtension(crawler)
         assert extension._get_main_process_ids() == list(SCHEMA_PID_MAP.values())
 
     async def test_get_process_ids_error(self, _MailSender):
         crawler = mock_crawler_with_handlers()
         crawler.engine.downloader.handlers._handlers = MagicMock()
         crawler.engine.downloader.handlers._handlers.values.side_effect = raise_import_error
-        extension = ScrapyPlaywrightMemoryUsageExtension(crawler)
+        extension = ScrapyBotrightMemoryUsageExtension(crawler)
         assert extension._get_main_process_ids() == []
 
     async def test_get_descendant_processes(self, _MailSender):
@@ -69,12 +69,12 @@ class TestMemoryUsageExtension(IsolatedAsyncioTestCase):
         p2.children.return_value = [p3, p4]
         p1.children.return_value = [p2]
         crawler = MagicMock()
-        extension = ScrapyPlaywrightMemoryUsageExtension(crawler)
+        extension = ScrapyBotrightMemoryUsageExtension(crawler)
         assert extension._get_descendant_processes(p1) == [p2, p3, p4]
 
     async def test_get_total_process_size(self, _MailSender):
         crawler = MagicMock()
-        extension = ScrapyPlaywrightMemoryUsageExtension(crawler)
+        extension = ScrapyBotrightMemoryUsageExtension(crawler)
         extension.psutil = MagicMock()
         extension.psutil.Process.return_value.memory_info.return_value = MockMemoryInfo()
         extension._get_main_process_ids = MagicMock(return_value=[1, 2, 3])
@@ -83,7 +83,7 @@ class TestMemoryUsageExtension(IsolatedAsyncioTestCase):
 
     async def test_get_virtual_size_sum(self, _MailSender):
         crawler = MagicMock()
-        extension = ScrapyPlaywrightMemoryUsageExtension(crawler)
+        extension = ScrapyBotrightMemoryUsageExtension(crawler)
         parent_cls_extension = MemoryUsage(crawler)
         extension._get_total_playwright_process_memory = MagicMock(return_value=123)
         assert extension.get_virtual_size() == parent_cls_extension.get_virtual_size() + 123

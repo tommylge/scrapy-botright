@@ -5,13 +5,13 @@ from typing import List
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.memusage import MemoryUsage
 
-from scrapy_playwright.handler import ScrapyPlaywrightDownloadHandler, logger
+from scrapy_botright.handler import ScrapyBotrightDownloadHandler, logger
 
 
 _MIB_FACTOR = 1024**2
 
 
-class ScrapyPlaywrightMemoryUsageExtension(MemoryUsage):
+class ScrapyBotrightMemoryUsageExtension(MemoryUsage):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         try:
@@ -24,7 +24,7 @@ class ScrapyPlaywrightMemoryUsageExtension(MemoryUsage):
             return [
                 handler.playwright_context_manager._connection._transport._proc.pid
                 for handler in self.crawler.engine.downloader.handlers._handlers.values()
-                if isinstance(handler, ScrapyPlaywrightDownloadHandler)
+                if isinstance(handler, ScrapyBotrightDownloadHandler)
                 and handler.playwright_context_manager
             ]
         except Exception:

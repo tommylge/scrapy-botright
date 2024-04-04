@@ -1,14 +1,15 @@
 import logging
-from typing import Awaitable, Iterator, Optional, Tuple, Union
+from typing import Awaitable, Generator
 
-from playwright.async_api import Error, Page, Request, Response
+from botright.playwright_mock import Page, Request, Response
+from playwright.async_api import Error
 from scrapy import Spider
 from scrapy.http.headers import Headers
 from scrapy.utils.python import to_unicode
 from w3lib.encoding import html_body_declared_encoding, http_content_type_encoding
 
 
-logger = logging.getLogger("scrapy-playwright")
+logger = logging.getLogger("scrapy-botright")
 
 
 async def _maybe_await(obj):
@@ -17,14 +18,18 @@ async def _maybe_await(obj):
     return obj
 
 
-def _possible_encodings(headers: Headers, text: str) -> Iterator[str]:
+def _possible_encodings(headers: Headers, text: str) -> Generator[str | None, None, None]:
     if headers.get("content-type"):
-        content_type = to_unicode(headers["content-type"])
+        raw_content_type = headers["content-type"]
+        if not isinstance(raw_content_type, (str, bytes)):
+            raise TypeError('"content-type" headers must either be str or bytes.')
+        content_type = to_unicode(raw_content_type)
         yield http_content_type_encoding(content_type)
     yield html_body_declared_encoding(text)
 
 
-def _encode_body(headers: Headers, text: str) -> Tuple[bytes, str]:
+
+def _encode_body(headers: Headers, text: str) -> tuple[bytes, str]:
     for encoding in filter(None, _possible_encodings(headers, text)):
         try:
             body = text.encode(encoding)
@@ -82,9 +87,9 @@ async def _get_page_content(
 
 
 async def _get_header_value(
-    resource: Union[Request, Response],
+    resource: Request | Response,
     header_name: str,
-) -> Optional[str]:
+) -> str | None:
     try:
         return await resource.header_value(header_name)
     except Exception:

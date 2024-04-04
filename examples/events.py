@@ -1,6 +1,6 @@
 from playwright.async_api import Dialog, Response as PlaywrightResponse
 from scrapy import Spider, Request
-from scrapy_playwright.page import PageMethod
+from scrapy_botright.page import PageMethod
 
 
 class EventsSpider(Spider):
@@ -10,8 +10,8 @@ class EventsSpider(Spider):
     custom_settings = {
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
         "DOWNLOAD_HANDLERS": {
-            "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-            # "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+            "https": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
+            # "http": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
         },
     }
 

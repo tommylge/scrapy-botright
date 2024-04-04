@@ -7,7 +7,7 @@ from playwright.async_api import Error as PlaywrightError
 from scrapy import Spider
 from scrapy.http.headers import Headers
 
-from scrapy_playwright._utils import (
+from scrapy_botright._utils import (
     _NAVIGATION_ERROR_MSG,
     _encode_body,
     _get_header_value,

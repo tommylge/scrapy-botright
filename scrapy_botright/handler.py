@@ -6,17 +6,17 @@ from ipaddress import ip_address
 from time import time
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Type, TypeVar, Union
 
+from async_class import AsyncClass
+from botright import Botright
+from botright.playwright_mock import Route
+from botright.playwright_mock import Request as BotrightRequest
+from botright.playwright_mock import Response as BotrightResponse
+from botright.playwright_mock import BrowserContext
+from botright.playwright_mock import Page
 from playwright.async_api import (
-    BrowserContext,
     BrowserType,
     Download,
     Error as PlaywrightError,
-    Page,
-    Playwright as AsyncPlaywright,
-    PlaywrightContextManager,
-    Request as PlaywrightRequest,
-    Response as PlaywrightResponse,
-    Route,
 )
 from scrapy import Spider, signals
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
@@ -30,9 +30,9 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import verify_installed_reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
-from scrapy_playwright.headers import use_scrapy_headers
-from scrapy_playwright.page import PageMethod
-from scrapy_playwright._utils import (
+from scrapy_botright.headers import use_scrapy_headers
+from scrapy_botright.page import PageMethod
+from scrapy_botright._utils import (
     _encode_body,
     _get_header_value,
     _get_page_content,
@@ -41,13 +41,13 @@ from scrapy_playwright._utils import (
 )
 
 
-__all__ = ["ScrapyPlaywrightDownloadHandler"]
+__all__ = ["ScrapyBotrightDownloadHandler"]
 
 
-PlaywrightHandler = TypeVar("PlaywrightHandler", bound="ScrapyPlaywrightDownloadHandler")
+BotrightHandler = TypeVar("BotrightHandler", bound="ScrapyBotrightDownloadHandler")
 
 
-logger = logging.getLogger("scrapy-playwright")
+logger = logging.getLogger("scrapy-botright")
 
 
 DEFAULT_BROWSER_TYPE = "chromium"
@@ -95,9 +95,8 @@ class Config:
         return cfg
 
 
-class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
-    playwright_context_manager: Optional[PlaywrightContextManager] = None
-    playwright: Optional[AsyncPlaywright] = None
+class ScrapyBotrightDownloadHandler(HTTPDownloadHandler):
+    botright_client: Botright
 
     def __init__(self, crawler: Crawler) -> None:
         super().__init__(settings=crawler.settings, crawler=crawler)
@@ -124,12 +123,12 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         else:
             self.process_request_headers = use_scrapy_headers
 
-        self.abort_request: Optional[Callable[[PlaywrightRequest], Union[Awaitable, bool]]] = None
+        self.abort_request: Optional[Callable[[BotrightRequest], Union[Awaitable, bool]]] = None
         if crawler.settings.get("PLAYWRIGHT_ABORT_REQUEST"):
             self.abort_request = load_object(crawler.settings["PLAYWRIGHT_ABORT_REQUEST"])
 
     @classmethod
-    def from_crawler(cls: Type[PlaywrightHandler], crawler: Crawler) -> PlaywrightHandler:
+    def from_crawler(cls: Type[BotrightHandler], crawler: Crawler) -> BotrightHandler:
         return cls(crawler)
 
     def _engine_started(self) -> Deferred:
@@ -139,9 +138,8 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
     async def _launch(self) -> None:
         """Launch Playwright manager and configured startup context(s)."""
         logger.info("Starting download handler")
-        self.playwright_context_manager = PlaywrightContextManager()
-        self.playwright = await self.playwright_context_manager.start()
-        self.browser_type: BrowserType = getattr(self.playwright, self.config.browser_type_name)
+        self.botright_client = await Botright()
+        self.browser_type: BrowserType = getattr(self.botright_client, self.config.browser_type_name)
         if self.config.startup_context_kwargs:
             logger.info("Launching %i startup context(s)", len(self.config.startup_context_kwargs))
             await asyncio.gather(
@@ -158,7 +156,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         async with self.browser_launch_lock:
             if not hasattr(self, "browser"):
                 logger.info("Launching browser %s", self.browser_type.name)
-                self.browser = await self.browser_type.launch(**self.config.launch_options)
+                self.browser = await self.botright_client.new_browser(**self.config.launch_options)
                 logger.info("Browser %s launched", self.browser_type.name)
 
     async def _maybe_connect_devtools(self) -> None:
@@ -182,20 +180,10 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         if hasattr(self, "context_semaphore"):
             await self.context_semaphore.acquire()
         context_kwargs = context_kwargs or {}
-        if context_kwargs.get(PERSISTENT_CONTEXT_PATH_KEY):
-            context = await self.browser_type.launch_persistent_context(**context_kwargs)
-            persistent = True
-            remote = False
-        elif self.config.cdp_url:
-            await self._maybe_connect_devtools()
-            context = await self.browser.new_context(**context_kwargs)
-            persistent = False
-            remote = True
-        else:
-            await self._maybe_launch_browser()
-            context = await self.browser.new_context(**context_kwargs)
-            persistent = False
-            remote = False
+        await self._maybe_launch_browser()
+        context = self.browser
+        persistent = False
+        remote = False
 
         context.on(
             "close", self._make_close_browser_context_callback(name, persistent, remote, spider)
@@ -300,8 +288,8 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
             await self.browser.close()
         if self.playwright_context_manager:
             await self.playwright_context_manager.__aexit__()
-        if self.playwright:
-            await self.playwright.stop()
+        if self.botright:
+            await self.botright.stop()
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
         if request.meta.get("playwright"):
@@ -367,7 +355,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 
         start_time = time()
         response, download = await self._get_response_and_download(request=request, page=page)
-        if isinstance(response, PlaywrightResponse):
+        if isinstance(response, BotrightResponse):
             await _set_redirect_meta(request=request, response=response)
             headers = Headers(await response.all_headers())
             headers.pop("Content-Encoding", None)
@@ -435,8 +423,8 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
 
     async def _get_response_and_download(
         self, request: Request, page: Page
-    ) -> Tuple[Optional[PlaywrightResponse], dict]:
-        response: Optional[PlaywrightResponse] = None
+    ) -> Tuple[Optional[BotrightResponse], dict]:
+        response: Optional[BotrightResponse] = None
         download: dict = {}  # updated in-place in _handle_download
         download_ready = asyncio.Event()
 
@@ -511,7 +499,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
                     },
                 )
 
-    def _increment_request_stats(self, request: PlaywrightRequest) -> None:
+    def _increment_request_stats(self, request: BotrightRequest) -> None:
         stats_prefix = "playwright/request_count"
         self.stats.inc_value(stats_prefix)
         self.stats.inc_value(f"{stats_prefix}/resource_type/{request.resource_type}")
@@ -519,7 +507,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         if request.is_navigation_request():
             self.stats.inc_value(f"{stats_prefix}/navigation")
 
-    def _increment_response_stats(self, response: PlaywrightResponse) -> None:
+    def _increment_response_stats(self, response: BotrightResponse) -> None:
         stats_prefix = "playwright/response_count"
         self.stats.inc_value(stats_prefix)
         self.stats.inc_value(f"{stats_prefix}/resource_type/{response.request.resource_type}")
@@ -564,7 +552,7 @@ class ScrapyPlaywrightDownloadHandler(HTTPDownloadHandler):
         encoding: str,
         spider: Spider,
     ) -> Callable:
-        async def _request_handler(route: Route, playwright_request: PlaywrightRequest) -> None:
+        async def _request_handler(route: Route, playwright_request: BotrightRequest) -> None:
             """Override request headers, method and body."""
             if self.abort_request:
                 should_abort = await _maybe_await(self.abort_request(playwright_request))
@@ -687,7 +675,7 @@ def _attach_page_event_handlers(
                 )
 
 
-async def _set_redirect_meta(request: Request, response: PlaywrightResponse) -> None:
+async def _set_redirect_meta(request: Request, response: BotrightResponse) -> None:
     """Update a Scrapy request with metadata about redirects."""
     redirect_times: int = 0
     redirect_urls: list = []
@@ -736,7 +724,7 @@ async def _maybe_execute_page_init_callback(
 
 
 def _make_request_logger(context_name: str, spider: Spider) -> Callable:
-    async def _log_request(request: PlaywrightRequest) -> None:
+    async def _log_request(request: BotrightRequest) -> None:
         log_args = [context_name, request.method.upper(), request.url, request.resource_type]
         referrer = await _get_header_value(request, "referer")
         if referrer:
@@ -760,7 +748,7 @@ def _make_request_logger(context_name: str, spider: Spider) -> Callable:
 
 
 def _make_response_logger(context_name: str, spider: Spider) -> Callable:
-    async def _log_response(response: PlaywrightResponse) -> None:
+    async def _log_response(response: BotrightResponse) -> None:
         log_args = [context_name, response.status, response.url]
         location = await _get_header_value(response, "location")
         if location:

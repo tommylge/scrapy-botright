@@ -2,7 +2,7 @@ from unittest import IsolatedAsyncioTestCase
 
 from scrapy.settings import Settings
 
-from scrapy_playwright.handler import Config
+from scrapy_botright.handler import Config
 
 from tests import make_handler
 

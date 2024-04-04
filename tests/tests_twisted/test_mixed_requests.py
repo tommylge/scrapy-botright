@@ -4,7 +4,7 @@ from scrapy.utils.test import get_crawler
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy_playwright.handler import ScrapyPlaywrightDownloadHandler
+from scrapy_botright.handler import ScrapyBotrightDownloadHandler
 from tests.mockserver import StaticMockServer
 
 
@@ -19,7 +19,7 @@ class MixedRequestsTestCase(TestCase):
     def setUp(self):
         self.server = StaticMockServer()
         self.server.__enter__()
-        self.handler = ScrapyPlaywrightDownloadHandler.from_crawler(get_crawler())
+        self.handler = ScrapyBotrightDownloadHandler.from_crawler(get_crawler())
         yield self.handler._engine_started()
 
     @defer.inlineCallbacks

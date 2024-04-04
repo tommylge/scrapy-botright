@@ -8,7 +8,7 @@ import pytest
 from scrapy import Spider, Request
 from scrapy.http.response.html import HtmlResponse
 
-from scrapy_playwright.page import PageMethod
+from scrapy_botright.page import PageMethod
 
 from tests import make_handler, assert_correct_response
 from tests.mockserver import StaticMockServer

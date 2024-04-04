@@ -15,8 +15,8 @@ from playwright.async_api import (
 from scrapy import Spider, Request, FormRequest
 from scrapy.http import Response
 
-from scrapy_playwright.handler import DEFAULT_CONTEXT_NAME
-from scrapy_playwright.page import PageMethod
+from scrapy_botright.handler import DEFAULT_CONTEXT_NAME
+from scrapy_botright.page import PageMethod
 
 from tests import make_handler, assert_correct_response
 from tests.mockserver import MockServer, StaticMockServer

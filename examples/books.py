@@ -14,8 +14,8 @@ class BooksSpider(Spider):
     custom_settings = {
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
         "DOWNLOAD_HANDLERS": {
-            # "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-            "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+            # "https": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
+            "http": "scrapy_playwright.handler.ScrapyBotrightDownloadHandler",
         },
         "CONCURRENT_REQUESTS": 32,
         "PLAYWRIGHT_MAX_PAGES_PER_CONTEXT": 4,

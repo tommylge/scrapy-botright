@@ -1,6 +1,6 @@
 import setuptools
 
-from scrapy_playwright import __version__
+from scrapy_botright import __version__
 
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -8,16 +8,16 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 
 setuptools.setup(
-    name="scrapy-playwright",
+    name="scrapy-botright",
     version=__version__,
     license="BSD",
-    description="Playwright integration for Scrapy",
+    description="Botright integration for Scrapy",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Eugenio Lacuesta",
-    author_email="eugenio.lacuesta@gmail.com",
+    author="Tom LARGE",
+    author_email="tle@sahar.fr",
     url="https://github.com/scrapy-plugins/scrapy-playwright",
-    packages=["scrapy_playwright"],
+    packages=["scrapy_botright"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: BSD License",
@@ -36,6 +36,6 @@ setuptools.setup(
     python_requires=">=3.8",
     install_requires=[
         "scrapy>=2.0,!=2.4.0",
-        "playwright>=1.15",
+        "botright",
     ],
 )
