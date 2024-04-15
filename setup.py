@@ -36,6 +36,6 @@ setuptools.setup(
     python_requires=">=3.8",
     install_requires=[
         "scrapy>=2.0,!=2.4.0",
-        "git+https://github.com/tommylge/Botright@light-weight",
+        # "git+https://github.com/tommylge/Botright@light-weight",
     ],
 )
