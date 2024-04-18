@@ -2,17 +2,19 @@
 This module includes functions to process request headers.
 Refer to the PLAYWRIGHT_PROCESS_REQUEST_HEADERS setting for more information.
 """
+
 from urllib.parse import urlparse
 
 from playwright.async_api import Request as PlaywrightRequest
 from scrapy.http.headers import Headers
+from scrapy.utils.datatypes import CaseInsensitiveDict
 
 
 async def use_scrapy_headers(
     browser_type: str,
     playwright_request: PlaywrightRequest,
     scrapy_headers: Headers,
-) -> dict:
+) -> dict | CaseInsensitiveDict:
     """Scrapy headers take precedence over Playwright headers for navigation requests.
     For non-navigation requests, only User-Agent is taken from the Scrapy headers."""
 

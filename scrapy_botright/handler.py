@@ -6,7 +6,6 @@ from ipaddress import ip_address
 from time import time
 from typing import Awaitable, Callable, Dict, Optional, Tuple, Type, TypeVar, Union
 
-from async_class import AsyncClass
 from botright import Botright
 from botright.playwright_mock import Route
 from botright.playwright_mock import Request as BotrightRequest
@@ -14,7 +13,6 @@ from botright.playwright_mock import Response as BotrightResponse
 from botright.playwright_mock import BrowserContext
 from botright.playwright_mock import Page
 from playwright.async_api import (
-    BrowserType,
     Download,
     Error as PlaywrightError,
 )
@@ -150,9 +148,7 @@ class ScrapyBotrightDownloadHandler(HTTPDownloadHandler):
         """Launch Playwright manager and configured startup context(s)."""
         logger.info("Starting download handler")
         self.botright_client = await Botright()  # type: ignore
-        self.browser_type: BrowserType = getattr(
-            self.botright_client, self.config.browser_type_name
-        )
+
         if self.config.startup_context_kwargs:
             logger.info(
                 "Launching %i startup context(s)",
@@ -406,7 +402,8 @@ class ScrapyBotrightDownloadHandler(HTTPDownloadHandler):
             ] = await response.security_details()
             with suppress(KeyError, TypeError, ValueError):
                 server_addr = await response.server_addr()
-                server_ip_address = ip_address(server_addr["ipAddress"])
+                if server_addr is not None:
+                    server_ip_address = ip_address(server_addr["ipAddress"])
 
         if download.get("exception"):
             raise download["exception"]
@@ -439,14 +436,13 @@ class ScrapyBotrightDownloadHandler(HTTPDownloadHandler):
             body=body,
             request=request,
             flags=["playwright"],
-            encoding=encoding,
             ip_address=server_ip_address,
         )
 
     async def _get_response_and_download(
         self, request: Request, page: Page
-    ) -> Tuple[Optional[BotrightResponse], dict]:
-        response: Optional[BotrightResponse] = None
+    ) -> Tuple[BotrightResponse | None, dict]:
+        response: BotrightResponse | None = None
         download: dict = {}  # updated in-place in _handle_download
         download_ready = asyncio.Event()
 
@@ -713,7 +709,7 @@ async def _set_redirect_meta(request: Request, response: BotrightResponse) -> No
     redirect_urls: list = []
     redirect_reasons: list = []
     redirected = response.request.redirected_from
-    while redirected is not None:
+    while redirected is not None and redirected is not False:
         redirect_times += 1
         redirect_urls.append(redirected.url)
         redirected_response = await redirected.response()
